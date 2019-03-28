@@ -1,0 +1,8 @@
+[submodule "cleverhans"]
+	path = cleverhans
+	url = https://github.com/tensorflow/cleverhans
+	branch = master
+[submodule "baselines"]
+	path = baselines
+	url = https://github.com/openai/baselines
+	branch = master
