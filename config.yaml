@@ -1,0 +1,7 @@
+attack: fgsm
+attack-norm: l1
+num-trials: 1
+alg:
+  grid_search: ['dqn', 'trpo']
+eps:
+  grid_search: [0.0, 0.1, 0.2, 0.3, 0.4]
