@@ -33,7 +33,7 @@ def _train(args):
 
     # create the learner
     learn = _LEARNERS[args.alg]
-    attack = _ATTACKS[args.attack_method](args_dict)
+    attack = _ATTACKS[args.attack_method]  # can't init, it needs the model
 
     env = build_env(args)
     if args.save_video_interval != 0:
