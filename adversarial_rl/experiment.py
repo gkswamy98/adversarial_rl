@@ -23,23 +23,17 @@ _ATTACKS = {
 }
 
 
-def _get_learn_function(alg, attack_method, **kwargs):
-    assert alg in _LEARNERS.keys()
-    assert attack_method in _ATTACKS.keys()
-
-    base_learner = _LEARNERS[alg]
-    attack = _ATTACKS[attack_method](**kwargs)
-    return base_learner(attack=attack, **kwargs)
-
-
 def _train(args):
+    args_dict = vars(args)
     env_type, env_id = get_env_type(args)
     print('env_type: {}'.format(env_type))
 
     total_timesteps = int(args.num_timesteps)
     seed = args.seed
 
-    learn = _get_learn_function(args.alg, args.attack_method, **vars(args))
+    # create the learner
+    learn = _LEARNERS[args.alg]
+    attack = _ATTACKS[args.attack_method](args_dict)
 
     env = build_env(args)
     if args.save_video_interval != 0:
@@ -49,10 +43,11 @@ def _train(args):
                                video_length=args.save_video_length)
 
     model = learn(
+        attack=attack,
         env=env,
         seed=seed,
         total_timesteps=total_timesteps,
-        **vars(args)
+        **args_dict
     )
     return model, env
 
@@ -65,7 +60,7 @@ def eval_model(model, env, eval_steps=10):
     episode_rew = 0
     for _ in range(eval_steps):
         if state is not None:
-            actions, _, state, _ = model.step(obs,S=state, M=dones)
+            actions, _, state, _ = model.step(obs, S=state, M=dones)
         else:
             actions, _, _, _ = model.step(obs)
 
