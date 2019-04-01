@@ -1,4 +1,5 @@
 """ This contains the code to attack an arbitrary trained agent on a gym env"""
+import skeletor
 import track
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropyLoss, Loss
@@ -80,3 +81,30 @@ def main(args):
     model_path = os.path.join(track.trial_dir(), 'model.ckpt')
     track.metric(trial_id=args.trial_id, reward=episode_reward,
                  model_path=model_path)
+
+
+def _add_args(parser):
+    # add the rest....
+    parser.add_argument('--alg', default='deepq', help='agent to train',
+                        choices=['deepq', 'mpi_trpo'])
+    parser.add_argument('--env', default='PongNoFrameskip-v4',
+                        help='Gym environment name to train on')
+    parser.add_argument('--attack', default='fgsm',
+                        choices=['fgsm'],
+                        help='attack method to run')
+    parser.add_argument('--attack-norm', default='l1',
+                        choices=['l1', 'l2', 'l0'],
+                        help="norm we use to constrain perturbation size")
+    parser.add_argument('--eps', default=.1, type=float,
+                        help='perturbation magnitude')
+    parser.add_argument('--num-trials', default=10, type=int,
+                        help='how many times to repeat the experiment')
+    parser.add_argument('--load_path', default='', required=True,
+                        help='Location of model with correct policy')
+    parser.add_argument('--train', action='store_const',
+                        help='if true, just trains the plain model from scratch')
+
+
+if __name__ == '__main__':
+    skeletor.supply_args(_add_args)
+    skeletor.execute(main)
