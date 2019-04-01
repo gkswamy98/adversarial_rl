@@ -4,7 +4,6 @@ from cleverhans.attacks import FastGradientMethod
 from dqn import learn as dqn_learner
 from trpo import learn as trpo_learner
 
-from baselines import logger
 from baselines.common.vec_env import VecFrameStack, VecNormalize, VecEnv
 from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
 from baselines.run import build_env, get_learn_function_defaults,\
@@ -37,7 +36,7 @@ def _train(args):
 
     env = build_env(args)
     if args.save_video_interval != 0:
-        env = VecVideoRecorder(env, os.join(logger.get_dir(), "videos"),
+        env = VecVideoRecorder(env, os.join(track.trial_dir(), "videos"),
                                record_video_trigger=lambda x: x
                                % args.save_video_interval == 0,
                                video_length=args.save_video_length)
@@ -76,25 +75,12 @@ def eval_model(model, env, eval_steps=10):
     return episode_rew
 
 
-def save_stats(model, trial_id, reward):
-    model_path = os.path.join(logger.get_dir(), 'model.ckpt')
-    # dump key,val data
-    logger.record_tabular('trial_id', trial_id)
-    logger.record_tabular('reward', reward)
-    logger.record_tabular('model_path', model_path)
-    logger.dump_tabular()
-
-    # I'm doing this with track here too since I know how to postprocess with this easily
-    track.metric(trial_id=trial_id, reward=reward, model_path=model_path)
-    # dump model, forgot how to do this in TF lol
-
-
-def train_all_trials(args):
-    for i in range(args.num_trials):
-        trial_dir = os.path.join(args.logdir, 'trial_%d' % i)
-        with logger.scoped_configure(dir=trial_dir):
-            model, env = _train(args)
-            episode_reward = eval_model(model, env, eval_steps=args.eval_steps)
-            save_stats(model, i, episode_reward)
-
-
+def main(args):
+    # track will already handle logging structures
+    model, env = _train(args)
+    episode_reward = eval_model(model, env, eval_steps=args.eval_steps)
+    model_path = os.path.join(track.trial_dir(), 'model.ckpt')
+    track.metric(trial_id=args.trial_id, reward=episode_reward,
+                 model_path=model_path)
+    # TODO dump model here
+    trial_dir = os.path.join(args.logdir, 'trial_%d' % args.trial_id)

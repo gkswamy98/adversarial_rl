@@ -1,5 +1,5 @@
 import skeletor
-from .experiment import train_all_trials
+from .experiment import main
 from .analysis import eval_all_trials
 
 import os
@@ -31,4 +31,4 @@ def add_args(parser):
 if __name__ == '__main__':
     skeletor.supply_args(add_args)
     skeletor.supply_postprocess(eval_all_trials)
-    skeletor.execute(train_all_trials)
+    skeletor.execute(main)
