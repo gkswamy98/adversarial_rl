@@ -1,6 +1,7 @@
 """ This contains the code to attack an arbitrary trained agent on a gym env"""
 import skeletor
 import track
+from cleverhans.model import CallableModelWrapper
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy, Loss
 
@@ -40,13 +41,16 @@ class WrappedModel:
         pass
 
 
-def eval_model(model, env, attack_method, eval_steps=10, **attack_params):
+def eval_model(model, env, attack_method, eval_steps=1000, **attack_params):
     obs = env.reset()
     state = model.initial_state if hasattr(model, 'initial_state') else None
     dones = np.zeros((1,))
 
-    cleverhans_model = WrappedModel(model)
-    attack = _ATTACKS[attack_method](model)
+    # functional callable model wrapper for cleverhans needs a fn, not object
+    def _forward(s):
+        return model(s)
+    cleverhans_model = CallableModelWrapper(_forward, "logits")
+    attack = _ATTACKS[attack_method](cleverhans_model)
 
     episode_rew = 0
     for _ in range(eval_steps):
@@ -66,7 +70,7 @@ def eval_model(model, env, attack_method, eval_steps=10, **attack_params):
         done = done.any() if isinstance(done, np.ndarray) else done
         if done:
             print('episode_rew={}'.format(episode_rew))
-            episode_rew = 0
+            # episode_rew = 0
             obs = env.reset()
     env.close()
     return episode_rew
@@ -89,12 +93,13 @@ def main(args):
     args = gym_args
 
     model, env = _load(args)
-    episode_reward = eval_model(model, env, eval_steps=args.eval_steps,
+    total_reward = eval_model(model, env, eval_steps=args.eval_steps,
                                 attack_method=args.attack,
                                 eps=args.eps)
+    print("total_reward: %.4f" % total_reward)
     model_path = os.path.join(track.trial_dir(), 'model.ckpt')
-    track.metric(trial_id=args.trial_id, reward=episode_reward,
-                 model_path=model_path)
+    # track.metric(trial_id=args.trial_id, reward=episode_reward,
+                 # model_path=model_path)
 
 
 def _add_args(parser):
