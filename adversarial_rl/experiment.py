@@ -14,6 +14,7 @@ from baselines.common.cmd_util import common_arg_parser
 import os
 import numpy as np
 
+
 from skeletor.launcher import _add_default_args
 
 _ATTACKS = {
@@ -31,40 +32,36 @@ def _load(args):
     return train(args, extra_args)
 
 
-class WrappedModel:
-    """ cleverhans expected a get_logits function for the model """
-    def __init__(self, model):
-        self.model = model
+class WrappedModel(CallableModelWrapper):
+    def __init__(self, forward, name):
+        super(WrappedModel, self).__init__(forward, name)
+        self.forward = forward
 
-    def get_logits(x, **kwargs):
-        # get logits from the model for this action ....
-        pass
+    def get_logits(self, x):
+        import pdb
+        pdb.set_trace()
+        return self.forward(x)
 
 
 def eval_model(model, env, attack_method, eval_steps=1000, **attack_params):
     obs = env.reset()
-    state = model.initial_state if hasattr(model, 'initial_state') else None
     dones = np.zeros((1,))
 
     # functional callable model wrapper for cleverhans needs a fn, not object
     def _forward(s):
         return model(s)
-    cleverhans_model = CallableModelWrapper(_forward, "logits")
+    cleverhans_model = WrappedModel(_forward, "logits")
     attack = _ATTACKS[attack_method](cleverhans_model)
 
     episode_rew = 0
     for _ in range(eval_steps):
-        if state is not None:
-            # perform the attack!
-            loss = CrossEntropy(model, attack=attack)
-            logits = cleverhans_model.get_logits(state)
-            adv_state = attack.generate(state, **attack_params)
+        # perform the attack!
+        loss = CrossEntropy(cleverhans_model, attack=attack)
+        logits = cleverhans_model.get_logits(obs)
+        adv_obs = attack.generate(obs, **attack_params)
+        action = model(adv_obs)[0]
 
-            actions, _, state, _ = model.step(obs, S=adv_state, M=dones)
-        else:
-            actions, _, _, _ = model.step(obs)
-
-        obs, rew, done, _ = env.step(actions)
+        obs, rew, done, _ = env.step(action)
         episode_rew += rew[0] if isinstance(env, VecEnv) else rew
         env.render()
         done = done.any() if isinstance(done, np.ndarray) else done
