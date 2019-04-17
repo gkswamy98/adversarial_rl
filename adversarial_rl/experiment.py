@@ -2,27 +2,32 @@
 import skeletor
 import track
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.loss import CrossEntropyLoss, Loss
+from cleverhans.loss import CrossEntropy, Loss
 
 import baselines
+from baselines.run import train
 from baselines.common.vec_env import VecEnv
 from baselines.common.tf_util import save_variables
+from baselines.common.cmd_util import common_arg_parser
 
 import os
 import numpy as np
+
+from skeletor.launcher import _add_default_args
 
 _ATTACKS = {
     'fgsm': FastGradientMethod,
 }
 
+parser = None
 
 def _load(args):
     setattr(args, 'num_timesteps', 0)
     extra_args = {}  # TODO see if we need this from baselines..run
     # try to load with pattern matching (this makes grid search easier)
     if args.load_path == '':
-        args.load_path = './%s_%s' % (args.alg, args.env)
-    return baselines.train(args, extra_args)
+        args.load_path = './%s_%s.' % (args.alg, args.env)
+    return train(args, extra_args)
 
 
 class WrappedModel:
@@ -47,7 +52,7 @@ def eval_model(model, env, attack_method, eval_steps=10, **attack_params):
     for _ in range(eval_steps):
         if state is not None:
             # perform the attack!
-            loss = CrossEntropyLoss(model, attack=attack)
+            loss = CrossEntropy(model, attack=attack)
             logits = cleverhans_model.get_logits(state)
             adv_state = attack.generate(state, **attack_params)
 
@@ -68,15 +73,24 @@ def eval_model(model, env, attack_method, eval_steps=10, **attack_params):
 
 
 def main(args):
-    if args.train:
-        model = baselines.main(args)
-        fname = './%s_%s' % (args.alg, args.env)
-        save_variables(fname)
-        return
+    global parser
+
+    gym_parser = common_arg_parser()
+    # now, we need to add the conflicting arguments to the gym parser
+    options = ['--' + arg for arg in vars(args).keys()]
+    for option in options:
+        for action in gym_parser._actions:
+            if vars(action)['option_strings'][0] == option:
+                gym_parser._handle_conflict_resolve(None, [(option, action)])
+    _add_args(gym_parser)
+    _add_default_args(gym_parser)
+    gym_args = gym_parser.parse_args()
+    # vars(gym_args).update(vars(args))
+    args = gym_args
 
     model, env = _load(args)
     episode_reward = eval_model(model, env, eval_steps=args.eval_steps,
-                                attack=args.attack,
+                                attack_method=args.attack,
                                 eps=args.eps)
     model_path = os.path.join(track.trial_dir(), 'model.ckpt')
     track.metric(trial_id=args.trial_id, reward=episode_reward,
@@ -84,9 +98,10 @@ def main(args):
 
 
 def _add_args(parser):
-    # add the rest....
+    # note: the baselines ddpg implementation is actually buggy, even 
+    # out-of-the-box
     parser.add_argument('--alg', default='deepq', help='agent to train',
-                        choices=['deepq', 'mpi_trpo'])
+                        choices=['deepq', 'trpo_mpi', 'ppo2'])
     parser.add_argument('--env', default='PongNoFrameskip-v4',
                         help='Gym environment name to train on')
     parser.add_argument('--attack', default='fgsm',
@@ -95,14 +110,18 @@ def _add_args(parser):
     parser.add_argument('--attack-norm', default='l1',
                         choices=['l1', 'l2', 'l0'],
                         help="norm we use to constrain perturbation size")
+    parser.add_argument('--eval_steps', default=10, type=int,
+                        help='how many steps of the env to run')
     parser.add_argument('--eps', default=.1, type=float,
                         help='perturbation magnitude')
     parser.add_argument('--num-trials', default=10, type=int,
                         help='how many times to repeat the experiment')
     parser.add_argument('--load_path', default='', required=True,
                         help='Location of model with correct policy')
-    parser.add_argument('--train', action='store_const',
-                        help='if true, just trains the plain model from scratch')
+    # parser.add_argument('--train', action='store_const',
+    #    # help='if true, just trains the plain model from scratch')
+
+
 
 
 if __name__ == '__main__':
