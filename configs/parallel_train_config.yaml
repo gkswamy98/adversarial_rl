@@ -1,0 +1,5 @@
+alg:
+  grid_search: ['dqn', 'trpo_mpi', 'ppo2', 'a2c']
+num_timesteps: 1e7
+env:
+  grid_search: ['ChopperCommand-v0', 'Pong-v0', 'Seaquest-v0', 'SpaceInvaders-v0']
