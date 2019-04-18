@@ -1,6 +1,6 @@
 attack: fgsm
 attack-norm: l1
-num-trials: 1
+num-trials: 5
 alg:
   grid_search: ['dqn', 'trpo']
 eps:
