@@ -1,17 +1,18 @@
 """ This contains the code to attack an arbitrary trained agent on a gym env"""
-import skeletor
-import track
+import gym
+
+from baselines import deepq
+
+from baselines.common.vec_env import VecEnv
+from baselines.common.cmd_util import common_arg_parser
+
 from cleverhans.model import CallableModelWrapper
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy, Loss
 
-import baselines
-from baselines.run import train
-from baselines.common.vec_env import VecEnv
-from baselines.common.tf_util import save_variables
-from baselines.common.cmd_util import common_arg_parser
+import skeletor
+import track
 
-import os
 import numpy as np
 
 
@@ -24,12 +25,18 @@ _ATTACKS = {
 parser = None
 
 def _load(args):
-    setattr(args, 'num_timesteps', 0)
-    extra_args = {}  # TODO see if we need this from baselines..run
     # try to load with pattern matching (this makes grid search easier)
     if args.load_path == '':
-        args.load_path = './%s_%s.' % (args.alg, args.env)
-    return train(args, extra_args)
+        args.load_path = './%s_%s.pkl' % (args.alg, args.env)
+
+    # load the enivornment
+    env = gym.make(args.env)
+    ### TODO add additional modifications for other 
+    act, q_placeholder, obs_placeholder = deepq.learn(env,
+                                                      network='mlp',
+                                                      total_timesteps=0,
+                                                      load_path=args.load_path)
+    return act, env, q_placeholder, obs_placeholder
 
 
 class WrappedModel(CallableModelWrapper):
@@ -38,35 +45,37 @@ class WrappedModel(CallableModelWrapper):
         self.forward = forward
 
     def get_logits(self, x):
-        import pdb
-        pdb.set_trace()
         return self.forward(x)
 
 
-def eval_model(model, env, attack_method, eval_steps=1000, **attack_params):
+def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
+               eval_steps=1000, eps=0.1):
     obs = env.reset()
-    dones = np.zeros((1,))
 
     # functional callable model wrapper for cleverhans needs a fn, not object
-    def _forward(s):
-        return model(s)
-    cleverhans_model = WrappedModel(_forward, "logits")
+    cleverhans_model = WrappedModel(lambda o: q_placeholder, "logits")
     attack = _ATTACKS[attack_method](cleverhans_model)
 
     episode_rew = 0
+    fgsm_params = {
+          'eps': eps,
+      }
     for _ in range(eval_steps):
         # perform the attack!
         loss = CrossEntropy(cleverhans_model, attack=attack)
-        logits = cleverhans_model.get_logits(obs)
-        adv_obs = attack.generate(obs, **attack_params)
-        action = model(adv_obs)[0]
+        logits = cleverhans_model.get_logits(obs_placeholder)
+        # import pdb; pdb.set_trace()
+        attack_op = attack.generate(obs_placeholder, **fgsm_params)
+        adv_obs = attack_op.eval({obs_placeholder: obs[None, :]})
 
+        action = model(adv_obs)[0]
         obs, rew, done, _ = env.step(action)
         episode_rew += rew[0] if isinstance(env, VecEnv) else rew
         env.render()
         done = done.any() if isinstance(done, np.ndarray) else done
         if done:
             print('episode_rew={}'.format(episode_rew))
+            episode_rew = 0
             # episode_rew = 0
             obs = env.reset()
     env.close()
@@ -74,7 +83,6 @@ def eval_model(model, env, attack_method, eval_steps=1000, **attack_params):
 
 
 def main(args):
-    global parser
 
     gym_parser = common_arg_parser()
     # now, we need to add the conflicting arguments to the gym parser
@@ -89,12 +97,13 @@ def main(args):
     # vars(gym_args).update(vars(args))
     args = gym_args
 
-    model, env = _load(args)
-    total_reward = eval_model(model, env, eval_steps=args.eval_steps,
-                                attack_method=args.attack,
-                                eps=args.eps)
+    model, env, q_placeholder, obs_placeholder = _load(args)
+    total_reward = eval_model(model, env, q_placeholder, obs_placeholder,
+                              eval_steps=args.eval_steps,
+                              attack_method=args.attack,
+                              eps=args.eps)
     print("total_reward: %.4f" % total_reward)
-    model_path = os.path.join(track.trial_dir(), 'model.ckpt')
+    # model_path = os.path.join(track.trial_dir(), 'model.ckpt')
     # track.metric(trial_id=args.trial_id, reward=episode_reward,
                  # model_path=model_path)
 
@@ -116,7 +125,7 @@ def _add_args(parser):
                         help='how many steps of the env to run')
     parser.add_argument('--eps', default=.1, type=float,
                         help='perturbation magnitude')
-    parser.add_argument('--num-trials', default=10, type=int,
+    parser.add_argument('--num_trials', default=10, type=int,
                         help='how many times to repeat the experiment')
     parser.add_argument('--load_path', default='', required=True,
                         help='Location of model with correct policy')
