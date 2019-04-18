@@ -20,7 +20,6 @@ main() {
     mkdir -p "./models"
     for env in "${envs[@]}"; do
         for alg in "${algs[@]}"; do
-            save_loc="./models"
             cmd="python3 -m baselines.run --env=${env} ${alg}${env}.pkl"
             box "${cmd}"
             bash -c "${cmd}"
