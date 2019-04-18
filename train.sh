@@ -9,10 +9,10 @@ box() {
 
 main() {
     algs=()
-    algs+=("--alg deepq --num_timesteps=2e6 --save_path=./models/deepq_")
-    algs+=("--alg trpo_mpi --num_timesteps=1e5 --save_path=./models/trpo_mpi_")
-    algs+=("--alg ppo2 --num_timesteps=3e6 --save_path=./models/ppo2_")
-    algs+=("--alg a2c --num_timesteps=3e6 --save_path=./models/a2c_")
+    algs+=("--alg=deepq --num_timesteps=2e5 --save_path=./models/deepq_")
+    algs+=("--alg=trpo_mpi --num_timesteps=1e5 --save_path=./models/trpo_mpi_")
+    algs+=("--alg=ppo2 --num_timesteps=3e6 --save_path=./models/ppo2_")
+    algs+=("--alg=a2c --num_timesteps=3e6 --save_path=./models/a2c_")
 
     envs=()
     envs+=("CartPole-v0")
