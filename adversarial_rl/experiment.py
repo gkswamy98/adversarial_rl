@@ -1,7 +1,7 @@
 """ This contains the code to attack an arbitrary trained agent on a gym env"""
 import gym
 
-from baselines import deepq
+from baselines import deepq, trpo_mpi, ppo2, a2c
 
 from baselines.common.vec_env import VecEnv
 from baselines.common.cmd_util import common_arg_parser
@@ -31,12 +31,36 @@ def _load(args):
 
     # load the enivornment
     env = gym.make(args.env)
-    ### TODO add additional modifications for other 
-    act, q_placeholder, obs_placeholder = deepq.learn(env,
-                                                      network='mlp',
-                                                      total_timesteps=0,
-                                                      load_path=args.load_path)
-    return act, env, q_placeholder, obs_placeholder
+
+    if args.alg == 'deepq':
+        act, q_placeholder, obs_placeholder = deepq.learn(env=env,
+                                                          network='mlp',
+                                                          total_timesteps=0,
+                                                          load_path=args.load_path)
+        return act, env, q_placeholder, obs_placeholder
+    elif args.alg == 'trpo_mpi':
+        pi = trpo_mpi.learn(env=env,
+                            network='mlp',
+                            total_timesteps=0,
+                            load_path=args.load_path)
+    elif args.alg == 'ppo2':
+        pi = ppo2.learn(env=env,
+                        network='mlp',
+                        total_timesteps=0,
+                        load_path=args.load_path).act_model
+    elif args.alg == 'a2c':
+        pi = a2c.learn(env=env,
+                        network='mlp',
+                        total_timesteps=0,
+                        load_path=args.load_path).step_model
+    else:
+        print("u fucked up")
+
+    def _step(observation, **extra_feed):
+        # step returns a, v, state, neglogp
+        return pi.step(observation, **extra_feed)[0]
+    return _step, env, pi.pi, pi.X
+
 
 
 class WrappedModel(CallableModelWrapper):
@@ -112,7 +136,7 @@ def _add_args(parser):
     # note: the baselines ddpg implementation is actually buggy, even 
     # out-of-the-box
     parser.add_argument('--alg', default='deepq', help='agent to train',
-                        choices=['deepq', 'trpo_mpi', 'ppo2'])
+                        choices=['deepq', 'trpo_mpi', 'ppo2', 'a2c'])
     parser.add_argument('--env', default='PongNoFrameskip-v4',
                         help='Gym environment name to train on')
     parser.add_argument('--attack', default='fgsm',
@@ -131,8 +155,6 @@ def _add_args(parser):
                         help='Location of model with correct policy')
     # parser.add_argument('--train', action='store_const',
     #    # help='if true, just trains the plain model from scratch')
-
-
 
 
 if __name__ == '__main__':
