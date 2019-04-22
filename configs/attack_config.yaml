@@ -1,7 +1,12 @@
 attack: fgsm
 attack-norm: l1
-load_path: "models/deepq_CartPole-v0.pkl"
-alg: dqn
-  #grid_search: ['dqn', 'trpo']
-eps: .5
-  #grid_search: [0.0, 0.1, 0.2, 0.3, 0.4]
+model_dir: /Users/noah/Dev/adversarial_rl/models  # must be absolute path
+eval_steps: 1e7
+attack:
+  grid_search: ['fgsm', 'random']
+alg:
+  grid_search: ['dqn', 'trpo_mpi', 'ppo2', 'a2c']
+eps:
+  grid_search: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+env:
+  grid_search: ['ChopperCommandNoFrameskip-v0', 'PongNoFrameskip-v0', 'SeaquestNoFrameskip-v0', 'SpaceInvadersNoFrameskip-v0']

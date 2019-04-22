@@ -74,7 +74,7 @@ def _load(args):
 
 
 def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
-               eval_steps=1000, eps=0.1, trial_num=0, render=False):
+               num_rollouts=10, eps=0.1, trial_num=0, render=False):
     # cleverhans needs to get the logits tensor, but expects you to run
     # through and recompute it for the given observation
     # even tho the graph is already created
@@ -85,13 +85,14 @@ def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
     # we'll keep tracking metrics here
     prev_done_step = 0
     stats = {}
-    stats['eval_step'] = 1
+    stats['eval_step'] = 0
     stats['episode'] = 0
     stats['episode_reward'] = 0.
     stats['cumulative_reward'] = 0.
 
     obs = env.reset()
-    for i in range(eval_steps):
+    num_episodes = 0
+    while num_episodes < num_rollouts:
         # the attack_op tensor will generate the perturbed state!
         attack_op = attack.generate(obs_placeholder, **fgsm_params)
         adv_obs = attack_op.eval({obs_placeholder: obs[None, :]})
@@ -105,20 +106,24 @@ def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
         done = done.any() if isinstance(done, np.ndarray) else done
 
         # let's get our metrics
-        stats['eval_step'] = i + 1
+        stats['eval_step'] += 1
         stats['episode_reward'] += reward
         stats['cumulative_reward'] += reward
-        stats['episode_len'] = i - prev_done_step
+        stats['episode_len'] = stats['eval_step'] + prev_done_step
 
         if done:
             obs = env.reset()
-            prev_done_step = i
+            prev_done_step = stats['eval_step']
             stats['episode'] += 1
             stats['episode_reward'] = 0
+            stats['eval_step'] = 0
             track.debug("Finished episode %d! Stats: %s"
                         % (stats['episode'], _debug_stats_str(stats)))
-        track.metric(iteration=i, trial_num=trial_num,
+            num_episodes += 1
+        track.metric(iteration=stats['eval_step'] + prev_done_step,
+                     trial_num=trial_num,
                      **stats)
+
     env.close()
     return stats  # gimme the final stats for the episode
 
@@ -139,7 +144,7 @@ def main(args):
 
     model, env, y_placeholder, obs_placeholder = _load(args)
     final_stats = eval_model(model, env, y_placeholder, obs_placeholder,
-                             eval_steps=args.eval_steps,
+                             num_rollouts=args.num_rollouts,
                              attack_method=args.attack,
                              eps=args.eps,
                              render=args.render)
@@ -159,8 +164,8 @@ def _add_args(parser):
     parser.add_argument('--attack-norm', default='l1',
                         choices=['l1'],
                         help="norm we use to constrain perturbation size")
-    parser.add_argument('--eval_steps', default=10, type=int,
-                        help='how many steps of the env to run')
+    parser.add_argument('--num_rollouts', default=10, type=int,
+                        help='how many episodes to run for each attack')
     parser.add_argument('--eps', default=.1, type=float,
                         help='perturbation magnitude')
     parser.add_argument('--num_trials', default=10, type=int,
