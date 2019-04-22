@@ -148,16 +148,16 @@ def main(args):
 
 def _add_args(parser):
     parser.add_argument('--alg', default='deepq', help='agent to train',
-                        choices=['deepq', 'trpo_mpi', 'ppo2', 'a2c'])
+                        choices=list(ALG_LEARN_FNS.keys()))
     parser.add_argument('--env', default='CartPole-v0',
                         help='Gym environment name to train on')
     parser.add_argument('--attack', default='fgsm',
-                        choices=['fgsm'],
+                        choices=list(ATTACKS.keys()),
                         help='attack method to run')
     parser.add_argument('--network', default='mlp', type=str,
                         help='policy network arhitecture')
     parser.add_argument('--attack-norm', default='l1',
-                        choices=['l1', 'l2', 'l0'],
+                        choices=['l1'],
                         help="norm we use to constrain perturbation size")
     parser.add_argument('--eval_steps', default=10, type=int,
                         help='how many steps of the env to run')
