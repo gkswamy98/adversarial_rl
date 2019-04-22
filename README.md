@@ -9,3 +9,7 @@ PPO   | 3e6
 DEEPQ | 2e6
 A2C   | 3e6
 -------------
+
+
+For each (alg, env) pair, 5 trials, 5 epsilon values
+track average reward
