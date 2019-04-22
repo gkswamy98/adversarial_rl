@@ -1,2 +1,2 @@
-model_checkpoint_path: "trpo_mpi_CartPole-v0.pkl"
-all_model_checkpoint_paths: "trpo_mpi_CartPole-v0.pkl"
+model_checkpoint_path: "trpo_mpi_SpaceInvadersNoFrameskip-v0.pkl"
+all_model_checkpoint_paths: "trpo_mpi_SpaceInvadersNoFrameskip-v0.pkl"
