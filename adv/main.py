@@ -60,7 +60,7 @@ def _load(args):
         if args.alg == 'a2c':
             pi = pi.step_model
 
-        def _act(pi, observation, **kwargs):
+        def _act(observation, **kwargs):
             return pi.step(observation, **kwargs)[0]
         act = _act
         y_placeholder, obs_placeholder = pi.pi, pi.X
