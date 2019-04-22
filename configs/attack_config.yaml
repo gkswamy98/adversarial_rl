@@ -1,7 +1,7 @@
 attack: fgsm
 attack-norm: l1
-num-trials: 5
-alg:
-  grid_search: ['dqn', 'trpo']
-eps:
-  grid_search: [0.0, 0.1, 0.2, 0.3, 0.4]
+load_path: "models/deepq_CartPole-v0.pkl"
+alg: dqn
+  #grid_search: ['dqn', 'trpo']
+eps: .5
+  #grid_search: [0.0, 0.1, 0.2, 0.3, 0.4]
