@@ -1,7 +1,7 @@
 attack: fgsm
 attack-norm: l1
 model_dir: /Users/noah/Dev/adversarial_rl/models  # must be absolute path
-eval_steps: 1e7
+num_rollouts: 10
 attack:
   grid_search: ['fgsm', 'random']
 alg:
