@@ -86,8 +86,7 @@ def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
     # we'll keep tracking metrics here
     prev_done_step = 0
     stats = {}
-    stats['mcr'] = 0
-    stats['sig'] = 0
+    rewards = []
     stats['eval_step'] = 0
     stats['episode'] = 0
     stats['episode_reward'] = 0.
@@ -112,17 +111,15 @@ def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
         stats['eval_step'] += 1
         stats['episode_reward'] += reward
         stats['cumulative_reward'] += reward
-        stats['mcr'] += reward
         stats['episode_len'] = stats['eval_step'] + prev_done_step
 
         if done:
+            rewards.append(stats['episode_reward'])
             obs = env.reset()
             prev_done_step = stats['eval_step']
             stats['episode'] += 1
             stats['episode_reward'] = 0
             stats['eval_step'] = 0
-            stats['mcr'] /= num_rollouts
-            print("MEAN VALUE WE NEEEEED " + str(stats['mcr']))
             track.debug("Finished episode %d! Stats: %s"
                         % (stats['episode'], _debug_stats_str(stats)))
             num_episodes += 1
@@ -131,7 +128,7 @@ def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
                      **stats)
 
     env.close()
-    print()
+    print('REWARDS', rewards)
     return stats  # gimme the final stats for the episode
 
 
@@ -172,12 +169,10 @@ def _add_args(parser):
     parser.add_argument('--attack_norm', default='inf',
                         choices=['l1', 'inf'],
                         help="norm we use to constrain perturbation size")
-    parser.add_argument('--num_rollouts', default=3, type=int,
+    parser.add_argument('--num_rollouts', default=10, type=int,
                         help='how many episodes to run for each attack')
     parser.add_argument('--eps', default=.1, type=float,
                         help='perturbation magnitude')
-    parser.add_argument('--num_trials', default=10, type=int,
-                        help='how many times to repeat the experiment')
     parser.add_argument('--model_dir', default='./models', type=str,
                         help='where to look for model pkls by default')
     parser.add_argument('--load_path', default='',
