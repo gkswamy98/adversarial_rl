@@ -74,13 +74,14 @@ def _load(args):
 
 
 def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
-               num_rollouts=3, eps=0.1, trial_num=0, render=False):
+               attack_norm='inf', num_rollouts=3, eps=0.1,
+               trial_num=0, render=False):
     # cleverhans needs to get the logits tensor, but expects you to run
     # through and recompute it for the given observation
     # even tho the graph is already created
     cleverhans_model = CallableModelWrapper(lambda o: q_placeholder, "logits")
     attack = ATTACKS[attack_method](cleverhans_model)
-    fgsm_params = {'eps': eps}
+    fgsm_params = {'eps': eps, 'norm': attack_norm}
 
     # we'll keep tracking metrics here
     prev_done_step = 0
@@ -152,6 +153,7 @@ def main(args):
     final_stats = eval_model(model, env, y_placeholder, obs_placeholder,
                              num_rollouts=args.num_rollouts,
                              attack_method=args.attack,
+                             attack_norm=args.attack_norm,
                              eps=args.eps,
                              render=args.render)
     track.debug("FINAL STATS:%s" % _debug_stats_str(final_stats))
@@ -167,8 +169,8 @@ def _add_args(parser):
                         help='attack method to run')
     parser.add_argument('--network', default='mlp', type=str,
                         help='policy network arhitecture')
-    parser.add_argument('--attack-norm', default='l1',
-                        choices=['l1'],
+    parser.add_argument('--attack_norm', default='inf',
+                        choices=['l1', 'inf'],
                         help="norm we use to constrain perturbation size")
     parser.add_argument('--num_rollouts', default=3, type=int,
                         help='how many episodes to run for each attack')

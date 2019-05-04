@@ -1,4 +1,11 @@
-# adversarial_rl
+# Reproducing "Adversarial Attacks on Neural Network Policies"
+
+## Installation
+
+Run `pip install -e .` to install the main dependencies.
+
+Unfortunately, the baselines repo requires separate installation. We had to make our own fork to make these attacks work. Please follow the installation instructions in [this repository](https://github.com/noahgolmant/baselines).
+
 
 ## CartPole-v0
 
