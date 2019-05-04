@@ -5,7 +5,7 @@ from baselines.ppo2 import ppo2
 from baselines.a2c import a2c
 # from baselines import deepq, trpo_mpi, ppo2, a2c  # home of modified learn fns 
 from cleverhans.attacks import FastGradientMethod
-from .attacks import RandomAttack
+from attacks import RandomAttack
 
 ATTACKS = {
     'fgsm': FastGradientMethod,

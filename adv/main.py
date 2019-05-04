@@ -13,7 +13,7 @@ from skeletor.launcher import _add_default_args
 
 import track
 
-from .constants import ALG_LEARN_FNS, VALID_ALGS, POLICY_GRAD_ALGS, ATTACKS
+from constants import ALG_LEARN_FNS, VALID_ALGS, POLICY_GRAD_ALGS, ATTACKS
 
 
 def _debug_stats_str(stats, warn=False):
@@ -74,7 +74,7 @@ def _load(args):
 
 
 def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
-               num_rollouts=10, eps=0.1, trial_num=0, render=False):
+               num_rollouts=3, eps=0.1, trial_num=0, render=False):
     # cleverhans needs to get the logits tensor, but expects you to run
     # through and recompute it for the given observation
     # even tho the graph is already created
@@ -85,6 +85,8 @@ def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
     # we'll keep tracking metrics here
     prev_done_step = 0
     stats = {}
+    stats['mcr'] = 0
+    stats['sig'] = 0
     stats['eval_step'] = 0
     stats['episode'] = 0
     stats['episode_reward'] = 0.
@@ -109,6 +111,7 @@ def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
         stats['eval_step'] += 1
         stats['episode_reward'] += reward
         stats['cumulative_reward'] += reward
+        stats['mcr'] += reward
         stats['episode_len'] = stats['eval_step'] + prev_done_step
 
         if done:
@@ -117,6 +120,8 @@ def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
             stats['episode'] += 1
             stats['episode_reward'] = 0
             stats['eval_step'] = 0
+            stats['mcr'] /= num_rollouts
+            print("MEAN VALUE WE NEEEEED " + str(stats['mcr']))
             track.debug("Finished episode %d! Stats: %s"
                         % (stats['episode'], _debug_stats_str(stats)))
             num_episodes += 1
@@ -125,6 +130,7 @@ def eval_model(model, env, q_placeholder, obs_placeholder, attack_method,
                      **stats)
 
     env.close()
+    print()
     return stats  # gimme the final stats for the episode
 
 
@@ -164,7 +170,7 @@ def _add_args(parser):
     parser.add_argument('--attack-norm', default='l1',
                         choices=['l1'],
                         help="norm we use to constrain perturbation size")
-    parser.add_argument('--num_rollouts', default=10, type=int,
+    parser.add_argument('--num_rollouts', default=3, type=int,
                         help='how many episodes to run for each attack')
     parser.add_argument('--eps', default=.1, type=float,
                         help='perturbation magnitude')
