@@ -4,5 +4,5 @@
 	branch = master
 [submodule "baselines"]
 	path = baselines
-	url = https://github.com/openai/baselines
+	url = https://github.com/noahgolmant/baselines
 	branch = master
