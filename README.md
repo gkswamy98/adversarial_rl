@@ -1,22 +1,17 @@
-# Reproducing "Adversarial Attacks on Neural Network Policies"
+# Adversarial Attacks on Deep Reinforcement Learning
 
 ## Installation
+1) Run `pip install -e .` to install the main dependencies.
+2) Follow the instructions at [this link](https://github.com/noahgolmant/baselines) to install our baselines fork.
 
-Run `pip install -e .` to install the main dependencies.
+## Running Experiments
+* To train models, run `cd baselines` and then `bash ../scripts/train.sh`. 
+  * To parallelize training runs, run `bash ../scripts/train.sh | xargs -PN -ICMD /bin/bash -exc CMD`, replacing N with the number of cores available.
+* To attack trained models, TODO
 
-Unfortunately, the baselines repo requires separate installation. We had to make our own fork to make these attacks work. Please follow the installation instructions in [this repository](https://github.com/noahgolmant/baselines).
+## Results
+TODO
 
-
-## CartPole-v0
-
-Alg  | Timesteps
-------------
-TRPO  | 1e5
-PPO   | 3e6
-DEEPQ | 2e6
-A2C   | 3e6
--------------
-
-
-For each (alg, env) pair, 5 trials, 5 epsilon values
-track average reward
+## Authors
+* [@gkswamy98](https://github.com/gkswamy98)
+* [@noahgolmant](https://github.com/noahgolmant)
