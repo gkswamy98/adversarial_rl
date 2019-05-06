@@ -6,8 +6,6 @@ __pycache__/
 # my stuff
 logs/
 raydata/
-models/
-test_models/
 **.swp
 
 # C extensions
