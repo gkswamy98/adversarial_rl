@@ -8,6 +8,7 @@ box() {
 
 
 main() {
+    cd "./baselines"
     algs=()
     t="1e6"
     algs+=("--alg=deepq --num_timesteps=${t} --save_path=./models/deepq_")
@@ -27,6 +28,7 @@ main() {
             bash -c "${cmd}"
         done
     done
+    cd ".."
 }
 
 main

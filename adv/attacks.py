@@ -10,10 +10,10 @@ class RandomAttack:
     def __init__(self, model, **kwargs):
         pass
 
-    def generate(self, obs_placeholder, eps=0.1, p=2, **kwargs):
-    	if p == 2:
-        	x = tf.random_normal([1, int(obs_placeholder.shape[1])])
-        	return obs_placeholder + eps * x / tf.norm(x, ord=2)
-        if p == 1:
-        	x = tfp.distributions.Laplace(loc=0, scale=1).sample([1, int(obs_placeholder.shape[1])])
-        	return obs_placeholder + eps * x / tf.norm(x, ord=1)
+    def generate(self, obs_placeholder, eps=0.1, ord=2, **kwargs):
+        if ord == 2:
+            x = tf.random_normal([1, int(obs_placeholder.shape[1])])
+            return obs_placeholder + eps * x / tf.norm(x, ord=2)
+        if ord == 1:
+            x = tfp.distributions.Laplace(loc=0, scale=1).sample([1, int(obs_placeholder.shape[1])])
+            return obs_placeholder + eps * x / tf.norm(x, ord=1)

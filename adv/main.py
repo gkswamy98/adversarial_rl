@@ -67,8 +67,8 @@ def _load(alg, env_name, network, load_path):
 
 
 def eval_model(model, env, y_placeholder, obs_placeholder, attack_method,
-               attack_ord=2, num_rollouts=3, eps=0.1,
-               trial_num=0, render=False):
+               attack_ord=2, num_rollouts=5, eps=0.1,
+               trial_num=0, render=False, alg_name='ERROR', env_name='ERROR'):
     # cleverhans needs to get the logits tensor, but expects you to run
     # through and recompute it for the given observation
     # even though the graph is already created
@@ -85,7 +85,6 @@ def eval_model(model, env, y_placeholder, obs_placeholder, attack_method,
     stats['eval_step'] = 0
     stats['episode'] = 0
     stats['episode_reward'] = 0.
-    stats['cumulative_reward'] = 0.
 
     obs = env.reset()
     num_episodes = 0
@@ -105,15 +104,13 @@ def eval_model(model, env, y_placeholder, obs_placeholder, attack_method,
         # let's get our metrics
         stats['eval_step'] += 1
         stats['episode_reward'] += reward
-        stats['cumulative_reward'] += reward
         stats['episode_len'] = stats['eval_step'] + prev_done_step
 
         if done:
             rewards.append(stats['episode_reward'])
             obs = env.reset()
             prev_done_step = stats['eval_step']
-            track.debug("Finished episode %d! Stats: %s"
-                        % (stats['episode'], _debug_stats_str(stats)))
+            track.debug("Finished episode %d!" % (stats['episode']))
             stats['episode'] += 1
             stats['episode_reward'] = 0
             stats['eval_step'] = 0
@@ -124,6 +121,7 @@ def eval_model(model, env, y_placeholder, obs_placeholder, attack_method,
                      **stats)
 
     env.close()
+    np.save('./data/{0}_{1}_{2}_{3}_{4}.npy'.format(alg_name, env_name, attack_method, attack_ord, eps), rewards)
     print('REWARDS', rewards)
     return stats  # gimme the final stats for the episode
 
@@ -166,7 +164,9 @@ def main(args):
                              attack_method=args.attack,
                              attack_ord=args.attack_ord,
                              eps=args.eps,
-                             render=args.render)
+                             render=args.render,
+                             alg_name=args.alg,
+                             env_name=args.env)
     track.debug("FINAL STATS:%s" % _debug_stats_str(final_stats))
 
 
@@ -182,7 +182,7 @@ def _add_args(parser):
                         help='policy network arhitecture')
     parser.add_argument('--attack_ord', default=2, type=int,
                         help="norm we use to constrain perturbation size")
-    parser.add_argument('--num_rollouts', default=10, type=int,
+    parser.add_argument('--num_rollouts', default=5, type=int,
                         help='how many episodes to run for each attack')
     parser.add_argument('--eps', default=.1, type=float,
                         help='perturbation magnitude')
