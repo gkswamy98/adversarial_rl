@@ -10,7 +10,7 @@
 * To attack trained models, TODO
 
 ## Results
-TODO
+PPO, TRPO, A2C and DQN models trained on CartPole and Acrobot are in the `models/` folder. Results of attacks are available in accompanying writeup.
 
 ## Authors
 * [@gkswamy98](https://github.com/gkswamy98)
