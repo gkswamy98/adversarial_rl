@@ -2,8 +2,8 @@
 
 ## Installation
 1) Run `git clone --recurse-submodules https://github.com/gkswamy98/adversarial_rl.git` to clone with submodules and `cd adversarial_rl`.
-2) Run `pip install -e .` to install the main dependencies.
-3) Run `cd baselines` and then `pip install -e .` to install our baselines fork.
+2) Run `pip3 install -e .` to install the main dependencies.
+3) Run `cd baselines` and then `pip3 install -e .` to install our baselines fork.
 
 ## Running Experiments
 * To train models, run `cd baselines` and then `bash ../scripts/train.sh`. 
